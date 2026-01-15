@@ -111,10 +111,10 @@ class GLaDOS:
             return None, data.get("message", "status error")
 
         u = data.get("data", {}) or {}
-        return {
-            "email": u.get("email", "Unknown"),
-            "days": u.get("leftDays", "Unknown"),
-        }, None
+        # 新增：直接打印完整返回，方便调试
+        print("完整返回数据：", json.dumps(u, ensure_ascii=False, indent=2))
+
+        return u, None
 
     def checkin(self):
         url = "https://glados.rocks/api/user/checkin"
@@ -141,8 +141,9 @@ def main():
             results.append((name, "失败", err))
             continue
 
-        print("邮箱：", st["email"])
-        print("剩余天数：", st["days"])
+        print("账号状态详情：")
+        for k, v in st.items():
+            print(f"  {k}: {v}")
 
         res = g.checkin()
         msg = res.get("message", "Unknown")
