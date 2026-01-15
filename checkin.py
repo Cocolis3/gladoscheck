@@ -112,7 +112,7 @@ class GLaDOS:
 
         u = data.get("data", {}) or {}
         # 新增：直接打印完整返回，方便调试
-        print("完整返回数据：", json.dumps(u, ensure_ascii=False, indent=2))
+        # print("完整返回数据：", json.dumps(u, ensure_ascii=False, indent=2))
 
         return u, None
 
