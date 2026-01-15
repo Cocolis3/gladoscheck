@@ -2,7 +2,7 @@ name: GLaDOS Checkin
 
 on:
   schedule:
-    - cron: "15 0 * * *"   # UTC 00:15 = SGT 08:15
+    - cron: "0 0 * * *"   # UTC 00:00 = 北京时间 08:00
   workflow_dispatch:
 
 jobs:
