@@ -153,8 +153,7 @@ def main():
 
         res = g.checkin()
         msg = res.get("message", "Unknown")
-        points = res.get("points")  # 今日签到获得点数
-
+        points_today = res.get("points")  # 今日签到获得点数
 
         if res.get("code") == 0:
             print(f"✅ 签到成功：{msg}，获得点数：{points_today}")
