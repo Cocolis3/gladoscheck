@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import json
 import os
 import time
@@ -9,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+DEBUG = False  # 调试开关，True 时打印完整 JSON
 
 def load_accounts_from_secret_env() -> list[dict]:
     raw = os.getenv("GLaDOS_COOKIES_JSON", "").strip()
@@ -32,7 +32,6 @@ def load_accounts_from_secret_env() -> list[dict]:
 
     return accounts
 
-
 def notify_telegram(title: str, text: str) -> bool:
     token = os.getenv("TG_BOT_TOKEN")
     chat_id = os.getenv("TG_CHAT_ID")
@@ -51,7 +50,6 @@ def notify_telegram(title: str, text: str) -> bool:
     except requests.RequestException:
         return False
 
-
 def notify_serverchan(title: str, markdown: str) -> bool:
     key = os.getenv("SERVERCHAN_KEY")
     if not key:
@@ -63,13 +61,11 @@ def notify_serverchan(title: str, markdown: str) -> bool:
     except requests.RequestException:
         return False
 
-
 def notify(title: str, text: str):
     # 不配置就不会发；优先 Telegram，其次 Server酱
     if notify_telegram(title, text):
         return
     notify_serverchan(title, text)
-
 
 class GLaDOS:
     def __init__(self):
@@ -112,9 +108,17 @@ class GLaDOS:
 
         u = data.get("data", {}) or {}
         # 新增：直接打印完整返回，方便调试
-        # print("完整返回数据：", json.dumps(u, ensure_ascii=False, indent=2))
+        if DEBUG:
+            print("完整返回数据：", json.dumps(u, ensure_ascii=False, indent=2))
 
-        return u, None
+        return {
+            "email": u.get("email"),
+            "vip": u.get("vip"),
+            "leftDays": u.get("leftDays"),
+            "days": u.get("days"),
+            "traffic": u.get("traffic"),
+            "cakeCount": u.get("cakeCount"),
+        }, None
 
     def checkin(self):
         url = "https://glados.rocks/api/user/checkin"
@@ -122,7 +126,6 @@ class GLaDOS:
         if r.status_code != 200:
             return {"code": -1, "message": f"HTTP {r.status_code}"}
         return r.json()
-
 
 def main():
     accounts = load_accounts_from_secret_env()
@@ -142,23 +145,26 @@ def main():
             continue
 
         print("账号状态详情：")
-        for k, v in st.items():
-            print(f"  {k}: {v}")
+        print(f"  邮箱: {st['email']}")
+        print(f"  VIP等级: {st['vip']}")
+        print(f"  剩余天数: {st['leftDays']}")
+        print(f"  已用流量: {st.get('traffic', 0)}")
+        print(f"  Cake数: {st.get('cakeCount', 0)}")
 
         res = g.checkin()
         msg = res.get("message", "Unknown")
-        points = res.get("points")  # 新增
+        points = res.get("points")  # 今日签到获得点数
 
 
         if res.get("code") == 0:
-            print(f"✅ 签到成功：{msg}，获得点数：{points}")
-            results.append((name, "成功", f"{msg} (点数: {points})"))
+            print(f"✅ 签到成功：{msg}，获得点数：{points_today}")
+            results.append((name, "成功", msg, points_today, st["leftDays"], st.get("traffic")))
         elif "repeat" in msg.lower():
             print("ℹ️ 今日已签到：", msg)
-            results.append((name, "已签到", msg))
+            results.append((name, "已签到", msg, points_today, st["leftDays"], st.get("traffic")))
         else:
             print("❌ 签到失败：", msg)
-            results.append((name, "失败", msg))
+            results.append((name, "失败", msg, None, st["leftDays"], st.get("traffic")))
 
         time.sleep(2)
 
@@ -167,13 +173,18 @@ def main():
     now_sgt = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (SGT)")
 
     report = f"时间：{now_sgt}\n结果：{ok}/{total}\n\n"
-    for name, st, msg in results:
+    for name, st, msg, points_today, leftDays, traffic in results:
         icon = "✅" if st == "成功" else ("ℹ️" if st == "已签到" else "❌")
-        report += f"{icon} {name}：{st} - {msg}\n"
+        report += f"{icon} {name}：{st} - {msg}"
+        if points_today is not None:
+            report += f" (今日点数: {points_today})"
+        report += f" (剩余天数: {leftDays})"
+        if traffic is not None:
+            report += f" (已用流量: {traffic})"
+        report += "\n"
 
     print("\n--- 汇总 ---\n" + report)
     notify("GLaDOS 签到报告", report)
-
 
 if __name__ == "__main__":
     main()
