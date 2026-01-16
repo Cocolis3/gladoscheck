@@ -124,7 +124,7 @@ class GLaDOS:
         return {
             "email": u.get("email"),
             "vip": u.get("vip"),
-            "leftDays": u.get("leftDays"),
+            "leftDays": int(float(u.get("leftDays", 0))), 
             "days": u.get("days"),
             "traffic": u.get("traffic"),
             "cakeCount": u.get("cakeCount"),
