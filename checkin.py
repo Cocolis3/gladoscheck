@@ -95,8 +95,8 @@ class GLaDOS:
         self.s.headers.update({
             "User-Agent": "Mozilla/5.0",
             "Accept": "application/json, text/plain, */*",
-            "Origin": "https://glados.rocks",
-            "Referer": "https://glados.rocks/console/checkin",
+            "Origin": "https://glados.cloud",
+            "Referer": "https://glados.cloud/console/checkin",
         })
 
     def set_cookies(self, koa_sess: str, koa_sess_sig: str):
@@ -107,7 +107,7 @@ class GLaDOS:
         })
 
     def get_status(self):
-        url = "https://glados.rocks/api/user/status"
+        url = "https://glados.cloud/api/user/status"
         r = self.s.get(url, timeout=30)
         if r.status_code != 200:
             return None, f"HTTP {r.status_code}"
@@ -131,7 +131,7 @@ class GLaDOS:
         }, None
 
     def checkin(self):
-        url = "https://glados.rocks/api/user/checkin"
+        url = "https://glados.cloud/api/user/checkin"
         r = self.s.post(url, json={"token": "glados.one"}, timeout=30)
         if r.status_code != 200:
             return {"code": -1, "message": f"HTTP {r.status_code}"}
